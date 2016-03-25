@@ -45,11 +45,11 @@ public class LPReader
 */
 
 	  public void run(){
-		displayImage();
 		String plate = readPlate();
 		
 		//Show the license plate characters that were read
 		System.out.println(plate);
+		displayImage(updateDatabase(plate));
 		
 		//updateDatabase(plate);
       } 
@@ -57,14 +57,20 @@ public class LPReader
 	  /**
 		will display the image of the car found ("camera's view/snapshot")
 	  **/
-	  public BufferedImage displayImage(){
+	  public BufferedImage displayImage(boolean a){
+
 		JFrame editorFrame = new JFrame("License Plate Image Found");
         editorFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         
         BufferedImage image = null;
         try
         {
-          image = ImageIO.read(new File(filename));
+        	if(a){
+          		image = ImageIO.read(new File("pictures/open_gate.jpg"));
+      		}else{
+      			editorFrame = new JFrame("NO PASS");
+      			image = ImageIO.read(new File("pictures/closed_gate.jpg"));
+      		}
         }
         catch (Exception e)
         {
@@ -89,7 +95,41 @@ public class LPReader
 	  **/
 	  public String readPlate(){
 		  
-		String plateChars = "";		  
+		String plateChars = "";	
+
+		Alpr alpr = new Alpr("us", "openalpr_64bit/openalpr.conf", "openalpr_64bit/runtime_data");
+
+		// Set top N candidates returned to 20
+		alpr.setTopN(20);
+
+		// Set pattern to Maryland
+		alpr.setDefaultRegion("dc");
+		try{
+			AlprResults results = alpr.recognize("LicensePlates/example.jpg");
+			//System.out.format("  %-15s%-8s\n", "Plate Number", "Confidence");
+			for (AlprPlateResult result : results.getPlates())
+			{
+			    for (AlprPlate plate : result.getTopNPlates()) {
+			        if (plate.isMatchesTemplate()){
+			            //System.out.print("  * ");
+			        	plateChars = plate.getCharacters();
+			        }
+			        //else
+			            //System.out.print("  - ");
+			        //System.out.format("%-15s%-8f\n", plate.getCharacters(), plate.getOverallConfidence());
+			    }
+			}
+
+			// Make sure to call this to release memory
+			alpr.unload();	
+		}
+		catch (Exception e)
+        {
+          e.printStackTrace();
+          System.exit(1);
+        }  
+        return plateChars;
+
 		/*  
 		//set up a Automatic License Plate Reader 
 		Alpr alpr = new Alpr("us", "config/alprd.conf", ""); //not sure what config file and runtime data are
@@ -127,15 +167,15 @@ public class LPReader
 		System.out.println(plateChars);
 		return plateChars;
 		*/
-		return "abcde1";
+		//return "abcde1";
 		  
 	  }
 	  
 	  /**
 		will update database accordingly and signal to open gate
 	  **/
-	  public void updateDatabase(String platenum){
-		  
+	  public boolean updateDatabase(String platenum){
+		  return false;
 		 //UNDER CONSTRUCTION
 		 
 		 /*
